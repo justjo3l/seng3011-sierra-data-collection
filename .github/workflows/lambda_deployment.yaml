@@ -18,7 +18,7 @@ jobs:
         uses: imehedi/actions-awscli-v2@latest
         with:
           args: "lambda update-function-code \
-            --function-name arn:aws:arn:aws:lambda:ap-southeast-2:471112783165:function:testFunction \
+            --function-name arn:aws:lambda:ap-southeast-2:992382806042:function:testFunction \
             --zip-file fileb://code.zip"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
