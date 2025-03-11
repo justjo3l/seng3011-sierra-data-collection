@@ -6,10 +6,12 @@ on:
     branches:
       - main
       - production
+      - Jack_lint_pipeline
   pull_request:
     branches:
       - main
       - production
+      - Jack_lint_pipeline
 
 permissions:
   checks: write
