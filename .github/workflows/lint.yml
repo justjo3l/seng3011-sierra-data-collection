@@ -39,8 +39,10 @@ jobs:
       - name: Run Flake8 (Checks for style issues)
         run: flake8 .
 
+      - name: Black Autoformat
+        run: black .
+
       - name: Run Black (Code formatting check)
         run: black --check .
 
-      - name: Black Autoformat
-        run: black .
+      
