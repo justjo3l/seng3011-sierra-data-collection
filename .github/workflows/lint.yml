@@ -41,3 +41,6 @@ jobs:
 
       - name: Run Black (Code formatting check)
         run: black --check .
+
+      - name: Black Autoformat
+        run: black .
