@@ -1,3 +1,8 @@
+ Jack_lint_pipeline
+# seng3011-sierra-data-collection
+Data Collection script. Utilising AWS lambda functions to GET, store and convert ESG data.
+
+
 # Sierra Data Collection Microservice
 
 ## Overview 
@@ -24,3 +29,4 @@ The data is then converted to `PARQUET` format, making it easily queriable.
 ## Licence 
 
 CC BY-NC-SA
+ main
