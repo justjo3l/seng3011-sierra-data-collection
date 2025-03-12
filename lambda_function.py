@@ -5,31 +5,32 @@ import io
 
 
 def lambda_handler(event, context):
+    print("Received event:", json.dumps(event, indent=2))  # Debugging
 
     # Check if body exists
-    if event.get("body") is None:
+    if "body" not in event or event["body"] is None:
         return {
             "statusCode": 400,
-            "body": json.dumps({"error": event})
+            "body": json.dumps({"error": "No CSV data received"})
         }
 
     try:
-        # Decode body if Base64-encoded
-        if event.get("isBase64Encoded", False):
+        # Decode Base64 CSV if necessary
+        if event.get("isBase64Encoded"):
             csv_bytes = base64.b64decode(event["body"])
         else:
-            csv_bytes = event["body"].encode("utf-8")  # Assume plain text CSV
-
-        # Convert bytes to string and parse CSV
+            csv_bytes = event["body"].encode("utf-8")
         csv_string = csv_bytes.decode("utf-8")
+
+        # Parse CSV
         csv_reader = csv.reader(io.StringIO(csv_string))
 
-        # Read CSV rows into a list
-        csv_data = [row for row in csv_reader]
+        # Get only first 5 rows
+        csv_data = [row for _, row in zip(range(5), csv_reader)]
 
         return {
             "statusCode": 200,
-            "body": json.dumps({"message": "CSV received", "data": csv_data})
+            "body": json.dumps({"message": "CSV processed", "data": csv_data})
         }
 
     except Exception as e:
