@@ -1,6 +1,5 @@
 import json
 import boto3
-import os
 from botocore.config import Config
 
 ALLOWED_BUCKETS = {"sierra-e-bucket"}
