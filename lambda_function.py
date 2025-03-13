@@ -1,39 +1,77 @@
 import json
-import base64
-import csv
-import io
+import boto3
+import os
+from botocore.config import Config
+
+ALLOWED_BUCKETS = {"sierra-e-bucket"}
 
 
 def lambda_handler(event, context):
-
-    # Check if body exists
-    if "body" not in event or event["body"] is None:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({"error": "No CSV data received"})
-        }
-
     try:
-        # Decode Base64 CSV if necessary
-        if event.get("isBase64Encoded"):
-            csv_bytes = base64.b64decode(event["body"])
-        else:
-            csv_bytes = event["body"].encode("utf-8")
-        csv_string = csv_bytes.decode("utf-8")
+        # Log the full event
+        print("Event received:", json.dumps(event))
 
-        # Parse CSV
-        csv_reader = csv.reader(io.StringIO(csv_string))
+        s3 = boto3.client(
+            's3',
+            region_name='ap-southeast-2',
+            config=Config(signature_version='s3v4')
+        )
 
-        # Get only first 5 rows
-        csv_data = [row for _, row in zip(range(5), csv_reader)]
+        params = event.get("queryStringParameters", {})
+        # Log query params
+        print("Query Parameters:", params)
+
+        if not params:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({
+                    "error": "No query parameters found"
+                    })
+                }
+
+        bucket_name = params.get("bucket")
+        file_name = params.get("file")
+
+        if not bucket_name or not file_name:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({
+                    "error": "Missing 'bucket' or 'file' parameter"
+                    })
+                }
+
+        if bucket_name not in ALLOWED_BUCKETS:
+            return {
+                "statusCode": 403,
+                "body": json.dumps({
+                    "error": "Bucket not allowed"
+                    })
+                }
+
+        # Log bucket and file name
+        print(f"Bucket: {bucket_name}, File: {file_name}")
+
+        # Generate pre-signed URL
+        presigned_url = s3.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': bucket_name,
+                'Key': file_name,
+                'ContentType': 'text/csv'
+                },
+            ExpiresIn=3600
+        )
+
+        # Log the URL
+        print("Generated Presigned URL:", presigned_url)
 
         return {
             "statusCode": 200,
-            "body": json.dumps({"message": "CSV processed", "data": csv_data})
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"URL": presigned_url})
         }
 
     except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": str(e)})
-        }
+        # Log error details
+        print(f"Error: {str(e)}")
+        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
