@@ -68,7 +68,7 @@ def lambda_handler(event, context):
         csv_path_tmp = StringIO()
         filtered_data_frame.to_csv(
             csv_path_tmp,
-            sep="|",
+            sep=",",
             index=False
         )
         s3_client.put_object(
