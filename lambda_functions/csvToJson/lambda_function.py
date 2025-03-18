@@ -39,7 +39,7 @@ def lambda_handler(event, context):
                 "events": []
             }
 
-        reader = csv.DictReader(data_to_string, delimiter='|')
+        reader = csv.DictReader(data_to_string, delimiter=',')
         for row in reader:
             timestamp_row = row['reported_date']
             company_name = row['company_name']
