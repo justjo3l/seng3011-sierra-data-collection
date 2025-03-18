@@ -3,6 +3,7 @@ import boto3
 from botocore.config import Config
 
 ALLOWED_BUCKETS = {"sierra-e-bucket"}
+UPLOAD_PREFIX = "UnprocessedCSV/"
 
 
 def lambda_handler(event, context):
@@ -47,15 +48,16 @@ def lambda_handler(event, context):
                     })
                 }
 
-        # Log bucket and file name
-        print(f"Bucket: {bucket_name}, File: {file_name}")
+        s3_key = f"{UPLOAD_PREFIX}{file_name}"
+
+        print(f"Bucket: {bucket_name}, File: {s3_key}")
 
         # Generate pre-signed URL
         presigned_url = s3.generate_presigned_url(
             'put_object',
             Params={
                 'Bucket': bucket_name,
-                'Key': file_name,
+                'Key': s3_key,
                 'ContentType': 'text/csv'
                 },
             ExpiresIn=3600
