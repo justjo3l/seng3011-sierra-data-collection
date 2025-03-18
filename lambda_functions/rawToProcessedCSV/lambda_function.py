@@ -5,7 +5,7 @@ import json
 import boto3
 import pandas as pd
 
-UPLOAD_PREFIX = "ProcessedCSV/"
+UPLOAD_PREFIX = "processedCSV/"
 UPLOAD_FILENAME = "environmental_risk"
 
 now = datetime.now()

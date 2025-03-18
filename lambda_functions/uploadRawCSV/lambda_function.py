@@ -3,7 +3,7 @@ import boto3
 from botocore.config import Config
 
 ALLOWED_BUCKETS = {"sierra-e-bucket"}
-UPLOAD_PREFIX = "UnprocessedCSV/"
+UPLOAD_PREFIX = "rawCSV/"
 
 
 def lambda_handler(event, context):
