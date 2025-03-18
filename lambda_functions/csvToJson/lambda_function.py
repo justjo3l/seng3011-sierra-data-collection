@@ -89,7 +89,7 @@ def lambda_handler(event, context):
         # uploads the converted json file to ProcessedJSONFolder
         s3_client.put_object(
             Bucket=bucket,
-            Key=f"{UPLOAD_PREFIX}/{UPLOAD_FILENAME}.json",
+            Key=f"{UPLOAD_PREFIX}{UPLOAD_FILENAME}.json",
             Body=json.dumps(json_header, indent=4)
         )
 

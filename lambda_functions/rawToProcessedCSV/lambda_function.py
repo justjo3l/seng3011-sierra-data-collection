@@ -73,7 +73,7 @@ def lambda_handler(event, context):
         )
         s3_client.put_object(
             Bucket=bucket,
-            Key=f"{UPLOAD_PREFIX}/{UPLOAD_FILENAME}.csv",
+            Key=f"{UPLOAD_PREFIX}{UPLOAD_FILENAME}.csv",
             Body=csv_path_tmp.getvalue()
         )
 
