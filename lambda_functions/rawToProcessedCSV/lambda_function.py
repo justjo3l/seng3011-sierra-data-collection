@@ -38,7 +38,7 @@ def lambda_handler(event, context):
         #  Condition when user chooses different filtering
         csv_data_frame = pd.read_csv(
             data_to_string,
-            sep="|"
+            sep=","
         )
 
         #   Filter for Environmental Risk Metrics
