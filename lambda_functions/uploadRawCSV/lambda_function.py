@@ -9,6 +9,7 @@ UPLOAD_PREFIX = "UnprocessedCSV/"
 def lambda_handler(event, context):
     try:
         # Log the full event
+        print("Starting Upload of Raw CSV to", UPLOAD_PREFIX)
         print("Event received:", json.dumps(event))
 
         s3 = boto3.client(
@@ -65,6 +66,9 @@ def lambda_handler(event, context):
 
         # Log the URL
         print("Generated Presigned URL:", presigned_url)
+
+        # Acknowledge completion of uploading
+        print("Upload of Raw CSV completed.")
 
         return {
             "statusCode": 200,
