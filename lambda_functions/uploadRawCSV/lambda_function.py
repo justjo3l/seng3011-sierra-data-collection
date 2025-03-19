@@ -53,6 +53,19 @@ def lambda_handler(event, context):
 
         print(f"Bucket: {bucket_name}, File: {s3_key}")
 
+        print(f"Checking if files exist in {UPLOAD_PREFIX}")
+
+        existing_files = s3.list_objects_v2(
+            Bucket=bucket_name,
+            Prefix=UPLOAD_PREFIX)
+
+        if 'Contents' in existing_files:
+            for obj in existing_files['Contents']:
+                print(f"Deleting existing file: {obj['Key']}")
+                s3.delete_object(Bucket=bucket_name, Key=obj['Key'])
+        else:
+            print("No files found in bucket")
+
         # Generate pre-signed URL
         presigned_url = s3.generate_presigned_url(
             'put_object',
