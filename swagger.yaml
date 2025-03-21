@@ -2,12 +2,35 @@ openapi: 3.0.0
 
 info: 
   title: Sierra Impact API's 
-  description: API dpcumentation for the collection and retireval microservices offered by Sierra Impact
+  description: API documentation for the collection and retireval microservices offered by Sierra Impact
   version: 1.0.0 
-contact: 
-  name: Jack Buchanan
-  email: z5478552@ad.unsw.edu.au
+  contact: 
+    name: Jack Buchanan
+    email: z5478552@ad.unsw.edu.au
 
 servers: 
   - url: https://2vyhl58mci.execute-api.ap-southeast-2.amazonaws.com/1
-  - description: Data Collection Endpoint 
+    description: Data Collection Endpoint 
+
+paths:
+  /get-upload-url:
+    get:
+      summary: Generate S3 Pre-Signed Upload URL
+      description: Returns a pre-signed URL to allow users to securely upload files to an S3 bucket.
+      operationId: getUploadUrl
+      responses:
+        "200":
+          description: Successfully generated pre-signed URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                    format: uri
+                    example: "https://s3.amazonaws.com/bucket-name/upload-key?AWSAccessKeyId=..."
+        "400":
+          description: Bad request, invalid parameters.
+        "500":
+          description: Server error, unable to generate pre-signed URL.
