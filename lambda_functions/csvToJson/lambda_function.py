@@ -25,6 +25,19 @@ def lambda_handler(event, context):
         bucket = event['Records'][0]['s3']['bucket']['name']
         key = event['Records'][0]['s3']['object']['key']
 
+        print(f"Checking if files exist in {UPLOAD_PREFIX}")
+
+        existing_files = s3_client.list_objects_v2(
+            Bucket=bucket,
+            Prefix=UPLOAD_PREFIX)
+
+        if 'Contents' in existing_files:
+            for obj in existing_files['Contents']:
+                print(f"Deleting existing file: {obj['Key']}")
+                s3_client.delete_object(Bucket=bucket, Key=obj['Key'])
+        else:
+            print("No files found in bucket")
+
         response = s3_client.get_object(Bucket=bucket, Key=key)
         data_to_string = TextIOWrapper(response['Body'], encoding='utf-8')
 
