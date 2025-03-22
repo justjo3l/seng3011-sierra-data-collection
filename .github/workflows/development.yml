@@ -50,10 +50,6 @@ jobs:
           aws lambda update-function-code \
             --function-name arn:aws:lambda:ap-southeast-2:992382806042:function:DevCollectionFunction \
             --zip-file fileb://../../uploadRawCSV.zip
-
-          aws lambda update-function-configuration \
-            --function-name arn:aws:lambda:ap-southeast-2:992382806042:function:DevCollectionFunction \
-            --environment "Variables={BUCKET_NAME=dev-sierra-e-bucket}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
