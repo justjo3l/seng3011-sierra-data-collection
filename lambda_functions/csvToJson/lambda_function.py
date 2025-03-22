@@ -41,7 +41,7 @@ def lambda_handler(event, context):
         response = s3_client.get_object(Bucket=bucket, Key=key)
         data_to_string = TextIOWrapper(response['Body'], encoding='utf-8')
 
-        # Code to convert to standarised JSON format
+        # Convert to standarised JSON format
         json_header = {
                 "data_source": "ClarityAI_Dataset",
                 "dataset_type": "Environmental_Risk",
