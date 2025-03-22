@@ -1,11 +1,39 @@
-name: Deploy Lambda Functions
+name: Deploy to Production
 
 on:
-  push:
+  pull_request:
     branches: [ production ]
 
 jobs:
+  run-linters:
+    name: Run Python linters
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install linters
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black
+
+      - name: Run Flake8 (Checks for style issues)
+        run: flake8 .
+
+      - name: Black Autoformat
+        run: black .
+
+      - name: Run Black (Code formatting check)
+        run: black --check .
+
   deploy:
+    needs: run-linters
     runs-on: ubuntu-latest
 
     steps:
@@ -15,19 +43,23 @@ jobs:
       - name: Install zip tool
         run: sudo apt-get install -y zip
 
-      - name: Deploy Raw CSV Upload Lambda
+      - name: Deploy Upload Function to Production
         run: |
           cd lambda_functions/uploadRawCSV
           zip -r ../../uploadRawCSV.zip .
           aws lambda update-function-code \
             --function-name arn:aws:lambda:ap-southeast-2:992382806042:function:collectionFunction \
             --zip-file fileb://../../uploadRawCSV.zip
+
+          aws lambda update-function-configuration \
+            --function-name arn:aws:lambda:ap-southeast-2:992382806042:function:collectionFunction \
+            --environment "Variables={BUCKET_NAME=sierra-e-bucket}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: "ap-southeast-2"
 
-      - name: Deploy Raw CSV to Processed CSV Lambda
+      - name: Deploy Raw to Processed CSV Function to Production
         run: |
           cd lambda_functions/rawToProcessedCSV
           zip -r ../../rawToProcessedCSV.zip .
@@ -39,7 +71,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: "ap-southeast-2"
 
-      - name: Deploy Processed CSV to JSON Lambda
+      - name: Deploy Processed CSV to JSON Function to Production
         run: |
           cd lambda_functions/csvToJson
           zip -r ../../csvToJson.zip .

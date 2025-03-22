@@ -1,8 +1,10 @@
 import json
+import os
+
 import boto3
 from botocore.config import Config
 
-ALLOWED_BUCKETS = {"sierra-e-bucket"}
+BUCKET_NAME = os.getenv("BUCKET_NAME", "dev-sierra-e-bucket")
 UPLOAD_PREFIX = "rawCSV/"
 
 
@@ -30,39 +32,30 @@ def lambda_handler(event, context):
                     })
                 }
 
-        bucket_name = params.get("bucket")
         file_name = params.get("file")
 
-        if not bucket_name or not file_name:
+        if not file_name:
             return {
                 "statusCode": 400,
                 "body": json.dumps({
-                    "error": "Missing 'bucket' or 'file' parameter"
-                    })
-                }
-
-        if bucket_name not in ALLOWED_BUCKETS:
-            return {
-                "statusCode": 403,
-                "body": json.dumps({
-                    "error": "Bucket not allowed"
+                    "error": "Missing 'file' parameter"
                     })
                 }
 
         s3_key = f"{UPLOAD_PREFIX}{file_name}"
 
-        print(f"Bucket: {bucket_name}, File: {s3_key}")
+        print(f"Bucket: {BUCKET_NAME}, File: {s3_key}")
 
         print(f"Checking if files exist in {UPLOAD_PREFIX}")
 
         existing_files = s3.list_objects_v2(
-            Bucket=bucket_name,
+            Bucket=BUCKET_NAME,
             Prefix=UPLOAD_PREFIX)
 
         if 'Contents' in existing_files:
             for obj in existing_files['Contents']:
                 print(f"Deleting existing file: {obj['Key']}")
-                s3.delete_object(Bucket=bucket_name, Key=obj['Key'])
+                s3.delete_object(Bucket=BUCKET_NAME, Key=obj['Key'])
         else:
             print("No files found in bucket")
 
@@ -70,7 +63,7 @@ def lambda_handler(event, context):
         presigned_url = s3.generate_presigned_url(
             'put_object',
             Params={
-                'Bucket': bucket_name,
+                'Bucket': BUCKET_NAME,
                 'Key': s3_key,
                 'ContentType': 'text/csv'
                 },
