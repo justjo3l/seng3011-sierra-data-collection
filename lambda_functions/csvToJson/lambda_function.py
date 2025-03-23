@@ -1,8 +1,22 @@
+"""
+AWS Lambda function to convert a CSV file from S3 into JSON format and store
+it back in S3.
+
+Steps:
+1. Detects new CSV file in S3 bucket via event trigger.
+2. Deletes any previously processed JSON files in the target folder.
+3. Reads and processes the CSV file.
+4. Converts the data into a structured JSON format.
+5. Uploads the new JSON file back to S3.
+
+Author: Team Sierra
+Date: 23/03/2025
+"""
+
 import csv
 import json
 from datetime import datetime
 from io import TextIOWrapper
-
 import boto3
 
 now = datetime.now()
@@ -15,101 +29,131 @@ UPLOAD_PREFIX = "processedJSON/"
 UPLOAD_FILENAME = "environmental_risk"
 
 
-def lambda_handler(event, context):
-    try:
-        print("Starting Conversion of CSV to JSON and store in",
-              UPLOAD_PREFIX)
-        print("Event received:", json.dumps(event))
+def lambda_handler(event, _context):
+    """
+    AWS Lambda function to convert a CSV file from S3 to a JSON format
+    and store it back in S3.
 
-        # Retrieves the bucketname and the file
+    Parameters:
+        event (dict): Event data containing S3 bucket and object key.
+        context (object): AWS Lambda runtime context.
+
+    Returns:
+        dict: HTTP response indicating success or failure.
+    """
+    try:
+        print("🚀 Starting Conversion of CSV to JSON and storing in",
+              UPLOAD_PREFIX)
+        print("📩 Event received:", json.dumps(event, indent=2))
+
+        # Retrieves bucket name and file key
         bucket = event['Records'][0]['s3']['bucket']['name']
         key = event['Records'][0]['s3']['object']['key']
 
-        print(f"Checking if files exist in {UPLOAD_PREFIX}")
+        print(f"🔍 Checking if files exist in {UPLOAD_PREFIX}...")
 
         existing_files = s3_client.list_objects_v2(
             Bucket=bucket,
             Prefix=UPLOAD_PREFIX)
-
         if 'Contents' in existing_files:
             for obj in existing_files['Contents']:
-                print(f"Deleting existing file: {obj['Key']}")
+                print(f"🗑 Deleting existing file: {obj['Key']}")
                 s3_client.delete_object(Bucket=bucket, Key=obj['Key'])
         else:
-            print("No files found in bucket")
+            print("✅ No previous files found in bucket.")
 
+        print(f"📥 Downloading file from S3: {key}")
         response = s3_client.get_object(Bucket=bucket, Key=key)
         data_to_string = TextIOWrapper(response['Body'], encoding='utf-8')
 
-        # Convert to standarised JSON format
+        # Standardized JSON format
         json_header = {
-                "data_source": "ClarityAI_Dataset",
-                "dataset_type": "Environmental_Risk",
-                "dataset_id": "https://ap-southeast-2.console.aws.amazon.com" +
-                "/s3/buckets/sierrabucket2025?region=ap-southeast-2&bucketTy" +
-                "pe=general&tab=objects",
-                "time_object": {"timestamp": date_time, "timezone": TZS},
-                "events": []
-            }
+            "data_source": "ClarityAI_Dataset",
+            "dataset_type": "Environmental_Risk",
+            "dataset_id": "https://ap-southeast-2.console.aws.amazon.com" +
+            "/s3/buckets/sierra-e-bucket",
+            "time_object": {"timestamp": date_time, "timezone": TZS},
+            "events": []
+        }
 
+        print("📊 Reading CSV file...")
         reader = csv.DictReader(data_to_string, delimiter=',')
-        for row in reader:
-            timestamp_row = row['reported_date']
-            company_name = row['company_name']
-            perm_id = row['perm_id']
-            data_type = row['data_type']
-            disclosure = row['disclosure']
-            metric_description = row['metric_description']
-            metric_name = row['metric_name']
-            metric_unit = row['metric_unit']
-            metric_value = row['metric_value']
-            metric_year = row['metric_year']
-            nb_points_of_observations = row['nb_points_of_observations']
-            metric_period = row['metric_period']
-            provider_name = row['provider_name']
-            pillar = row['pillar']
-            headquarter_country = row['headquarter_country']
 
-            attributes = {
-                "company_name": company_name,
-                "perm_id": perm_id,
-                "data_type": data_type,
-                "disclosure": disclosure,
-                "metric_description": metric_description,
-                "metric_name": metric_name,
-                "metric_unit": metric_unit,
-                "metric_value": metric_value,
-                "metric_year": metric_year,
-                "nb_points_of_observations": nb_points_of_observations,
-                "metric_period": metric_period,
-                "provider_name": provider_name,
-                "pillar": pillar,
-                "headquarter_country": headquarter_country
-                }
+        # Check if all expected columns are present
+        expected_columns = {
+            "reported_date", "company_name", "perm_id", "data_type",
+            "disclosure",
+            "metric_description", "metric_name", "metric_unit", "metric_value",
+            "metric_year", "nb_points_of_observations", "metric_period",
+            "provider_name", "pillar", "headquarter_country"
+        }
+
+        actual_columns = set(reader.fieldnames)
+        missing_columns = expected_columns - actual_columns
+        if missing_columns:
+            print(f"❌ Missing columns in CSV: {missing_columns}")
+            return {"statusCode": 400, "body": json.dumps({
+                "error": "Missing columns",
+                "missing": list(missing_columns)})}
+        print("✅ All expected columns are present.")
+
+        # Debug: Print unique `metric_name` values
+        metric_names = set()
+        events_added = 0
+
+        for row in reader:
+            metric_name = row.get('metric_name', '').strip()
+            metric_names.add(metric_name)  # Collect unique metric names
 
             event = {
                 "time_object": {
-                    "timestamp": timestamp_row,
+                    "timestamp": row['reported_date'],
                     "duration": 1,
                     "duration_unit": "day",
                     "timezone": TZS
                 },
                 "event_type": "ESG data",
-                "attribute": attributes
+                "attribute": {
+                    "company_name": row['company_name'],
+                    "perm_id": row['perm_id'],
+                    "data_type": row['data_type'],
+                    "disclosure": row['disclosure'],
+                    "metric_description": row['metric_description'],
+                    "metric_name": metric_name,
+                    "metric_unit": row['metric_unit'],
+                    "metric_value": row['metric_value'],
+                    "metric_year": row['metric_year'],
+                    "nb_points_of_observations":
+                    row['nb_points_of_observations'],
+                    "metric_period": row['metric_period'],
+                    "provider_name": row['provider_name'],
+                    "pillar": row['pillar'],
+                    "headquarter_country": row['headquarter_country']
+                }
             }
             json_header["events"].append(event)
+            events_added += 1
 
-        # uploads the converted json file to ProcessedJSONFolder
+        print(f"📈 Unique metric names in CSV: {list(metric_names)}")
+        print(f"✅ Total events processed: {events_added}")
+
+        # Upload the converted JSON file
+        json_output = json.dumps(json_header, indent=4)
+        print("📤 Uploading JSON file to S3: " +
+              f"{UPLOAD_PREFIX}{UPLOAD_FILENAME}.json")
         s3_client.put_object(
             Bucket=bucket,
             Key=f"{UPLOAD_PREFIX}{UPLOAD_FILENAME}.json",
-            Body=json.dumps(json_header, indent=4)
-        )
+            Body=json_output)
 
-        # Acknowledge completion of conversion
-        print("Conversion of CSV to JSON completed.")
+        print("🎉 Conversion of CSV to JSON completed successfully!")
 
-    except Exception as e:
-        # Log error details
-        print(f"Error: {str(e)}")
-        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
+        return {"statusCode": 200, "body": json.dumps({
+            "status": "Success",
+            "events_added": events_added})}
+
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"❌ Unexpected Error: {e}")
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": "Internal Server Error"})}
